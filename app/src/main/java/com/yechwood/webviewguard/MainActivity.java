@@ -37,7 +37,7 @@ public final class MainActivity extends Activity {
 
             FrameLayout root = new FrameLayout(this);
             root.setBackgroundColor(Color.WHITE);
-            webView = new WebView(getApplicationContext());
+            webView = new WebView(this);
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setDomStorageEnabled(true);
@@ -61,7 +61,7 @@ public final class MainActivity extends Activity {
             });
             root.addView(webView, new FrameLayout.LayoutParams(-1, -1));
             setContentView(root);
-            if (state == null || !webView.restoreState(state).equals(webView)) {
+            if (state == null || webView.restoreState(state) == null) {
                 webView.loadUrl("file:///android_asset/home.html");
             }
         } catch (Throwable error) {
