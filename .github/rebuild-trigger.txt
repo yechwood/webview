@@ -1,0 +1,2 @@
+Rebuild trigger for the combined TestDPC + Rethink APK.
+This commit starts a fresh workflow run; the workflow concurrency group cancels any stale run on this branch.
