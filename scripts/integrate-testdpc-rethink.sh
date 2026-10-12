@@ -138,7 +138,7 @@ for rel in ("rethink/app/src/main/AndroidManifest.xml", "rethink/app/src/full/An
     if not p.exists():
         continue
     s = p.read_text()
-    if 'xmlns:tools=' not in s.split('>', 1)[0]:
+    if 'xmlns:tools=' not in s:
         s = s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android"',
                       '<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"', 1)
     # Keep Rethink's app-level identity/security settings as the merged app's values.
