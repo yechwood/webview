@@ -24,7 +24,7 @@ mkdir -p rethink/setupdesign/src/main/java rethink/setupdesign/src/main/res
 [ ! -f rethink/setupdesign/main/AndroidManifest.xml ] || cp rethink/setupdesign/main/AndroidManifest.xml rethink/setupdesign/src/main/AndroidManifest.xml
 cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
-android { namespace = "com.afwsamples.testdpc"; compileSdk = 35; defaultConfig { minSdk = 23 } }
+android { namespace = "com.afwsamples.testdpc"; compileSdk = 35; buildFeatures { aidl = true }; defaultConfig { minSdk = 23 } }
 dependencies {
  implementation("androidx.appcompat:appcompat:1.7.0")
  implementation("androidx.annotation:annotation:1.9.1")
@@ -90,6 +90,7 @@ plugins { id("com.android.library") }
 android {
     namespace = "com.google.android.setupcompat"
     compileSdk = 35
+    buildFeatures { aidl = true }
     defaultConfig { minSdk = 23 }
 }
 dependencies {
