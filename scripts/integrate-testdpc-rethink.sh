@@ -8,6 +8,8 @@ cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest
 mkdir -p rethink/setupdesign rethink/setupcompat
 curl -fL 'https://android.googlesource.com/platform/external/setupdesign/+archive/4634dac90e3c09a78c2fcdfcb16ab9cb16265527.tar.gz' | tar -xz -C rethink/setupdesign
 curl -fL 'https://android.googlesource.com/platform/external/setupcompat/+archive/2ce41c8f4de550b5186233cec0a722dd0ffd9a84.tar.gz' | tar -xz -C rethink/setupcompat
+# These source archives contain upstream Groovy build files that shadow our Gradle module scripts.
+rm -f rethink/setupcompat/build.gradle rethink/setupdesign/build.gradle
 cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
 android { namespace = "com.afwsamples.testdpc"; compileSdk = 35; defaultConfig { minSdk = 23 } }
