@@ -6,6 +6,35 @@ cp -a testdpc/src/main/res rethink/testdpc/src/main/
 cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
 cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
 
+# This is one combined app: retain Rethink's own launcher as the app entry point.
+# TestDPC's manifest adds a second MAIN/LAUNCHER activity (and setup alias);
+# the launcher may open the wrong activity instead of Rethink's AppLockActivity.
+python3 - <<'PY_LAUNCHERS'
+from pathlib import Path
+import re
+p = Path("rethink/testdpc/src/main/AndroidManifest.xml")
+s = p.read_text()
+# Remove only the LAUNCHER intent-filter inside PolicyManagementActivity;
+# keep its CHECK_POLICY_COMPLIANCE filter and all device-policy components.
+m = re.search(r'(<activity\\b[^>]*android:name="\\.PolicyManagementActivity"[^>]*>)(.*?)(</activity>)', s, re.S)
+if not m:
+    raise SystemExit("Could not locate TestDPC PolicyManagementActivity")
+body = m.group(2)
+body2, n = re.subn(
+    r'\\s*<intent-filter>\\s*<action android:name="android.intent.action.MAIN"\\s*/>\\s*<category android:name="android.intent.category.LAUNCHER"\\s*/>\\s*</intent-filter>',
+    '',
+    body,
+    count=1,
+)
+if n != 1:
+    raise SystemExit("Could not remove exactly one TestDPC launcher filter")
+s = s[:m.start(2)] + body2 + s[m.end(2):]
+# Remove LAUNCHER from the setup alias but preserve its INFO category for provisioning.
+s = re.sub(r'<category android:name="android.intent.category.LAUNCHER"\\s*/>', '', s)
+p.write_text(s)
+print("Kept Rethink as the sole launcher entry point in the combined APK")
+PY_LAUNCHERS
+
 # Give TestDPC's hard-coded provider authorities a unique identity for the combined
 # app. Otherwise an independently installed TestDPC claims these same authorities
 # and Android rejects this APK with INSTALL_FAILED_CONFLICTING_PROVIDER.
