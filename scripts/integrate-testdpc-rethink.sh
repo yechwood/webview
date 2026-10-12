@@ -6,8 +6,8 @@ cp -a testdpc/src/main/res rethink/testdpc/src/main/
 cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
 cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
 mkdir -p rethink/setupdesign rethink/setupcompat rethink/setupdesign-strings
-curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://github.com/aosp-mirror/platform_external_setupdesign/archive/4634dac90e3c09a78c2fcdfcb16ab9cb16265527.tar.gz' | tar -xz --strip-components=1 -C rethink/setupdesign
-curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://github.com/aosp-mirror/platform_external_setupcompat/archive/2ce41c8f4de550b5186233cec0a722dd0ffd9a84.tar.gz' | tar -xz --strip-components=1 -C rethink/setupcompat
+curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://gitlab.com/aosp-mirror-1/platform/external/setupdesign/-/archive/main/setupdesign-main.tar.gz' | tar -xz --strip-components=1 -C rethink/setupdesign
+curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://gitlab.com/aosp-mirror-1/platform/external/setupcompat/-/archive/main/setupcompat-main.tar.gz' | tar -xz --strip-components=1 -C rethink/setupcompat
 # These source archives contain upstream Groovy build files that shadow our Gradle module scripts.
 rm -f rethink/setupcompat/build.gradle rethink/setupdesign/build.gradle
 # Normalize source archives into standard Android library source layouts.
