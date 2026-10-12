@@ -183,3 +183,19 @@ cat > rethink/testdpc/src/main/res/values/integration_compat.xml <<'XML'
     <style name="SudThemeGlifV4.DayNight" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
 </resources>
 XML
+
+# Give the combined application its own installable package identity.
+# Keep the Rethink namespace unchanged so its internal Kotlin/Java references
+# and generated R classes continue to resolve, while Android installs it as
+# com.yechwood.testdpc.rethink rather than the upstream Rethink or TestDPC ID.
+python3 - <<'PY_PACKAGE'
+from pathlib import Path
+p = Path("rethink/app/build.gradle.kts")
+s = p.read_text()
+old = 'applicationId = "com.celzero.bravedns"'
+new = 'applicationId = "com.yechwood.testdpc.rethink"'
+if s.count(old) != 1:
+    raise SystemExit(f"Expected exactly one default applicationId declaration, found {s.count(old)}")
+p.write_text(s.replace(old, new, 1))
+print("Configured combined APK applicationId: com.yechwood.testdpc.rethink")
+PY_PACKAGE
