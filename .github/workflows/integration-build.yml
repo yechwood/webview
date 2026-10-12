@@ -1,0 +1,50 @@
+name: Integration build investigation
+
+on:
+  push:
+    branches:
+      - integration/testdpc-rethink
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  baseline-builds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Install Android SDK prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git unzip openjdk-17-jdk
+          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
+      - name: Check out target branch
+        env:
+          TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.ref_name }}
+        run: |
+          git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" target
+          test -f target/settings.gradle -o -f target/settings.gradle.kts
+          echo "Target branch checkout succeeded."
+      - name: Build Rethink baseline (de-googled debug APK)
+        run: |
+          git clone --depth 1 https://github.com/yechwood/rethink-app.git rethink
+          cd rethink
+          chmod +x ./gradlew
+          ./gradlew --no-daemon --stacktrace assembleFdroidFullDebug -PfirestackRepo=jitpack
+      - name: Build TestDPC baseline
+        run: |
+          git clone --depth 1 https://github.com/yechwood/android-testdpc.git testdpc
+          cd testdpc
+          chmod +x ./build.sh
+          ./build.sh
+      - name: Record baseline scope
+        if: always()
+        run: |
+          {
+            echo "This job builds the two upstream baselines independently."
+            echo "It does NOT claim to produce a combined APK."
+            echo "The integration must merge TestDPC's device-policy manifest/components into the Rethink application and wire the TestDPC UI as the launch screen before a combined artifact is valid."
+          } > integration-build-scope.txt
