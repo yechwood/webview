@@ -18,7 +18,9 @@ jobs:
           command -v git
           command -v unzip
           java -version
-          echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
+          JAVA_HOME_ACTUAL="$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")"
+          echo "Detected JAVA_HOME=$JAVA_HOME_ACTUAL"
+          echo "JAVA_HOME=$JAVA_HOME_ACTUAL" >> "$GITHUB_ENV"
       - name: Clone source repositories
         env:
           TOKEN: ${{ github.token }}
