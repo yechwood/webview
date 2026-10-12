@@ -1,132 +1,45 @@
-name: Combined TestDPC + Rethink APK
-
+name: Combined TestDPC and Rethink APK
 on:
   push:
-    branches:
-      - integration/testdpc-rethink
+    branches: [integration/testdpc-rethink]
   workflow_dispatch:
-
 permissions:
   contents: write
-
 jobs:
   combined-apk:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
-      - name: Install build prerequisites
+      - name: Install prerequisites
         run: |
           sudo apt-get update
           sudo apt-get install -y git unzip openjdk-17-jdk
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
-      - name: Check out integration branch
+      - name: Clone source repositories
         env:
           TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           REF: ${{ github.ref_name }}
         run: |
           git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" target
-      - name: Fetch upstream app sources
-        run: |
           git clone --depth 1 https://github.com/yechwood/rethink-app.git rethink
           git clone --depth 1 https://github.com/yechwood/android-testdpc.git testdpc
-      - name: Integrate TestDPC as an Android library
+      - name: Integrate TestDPC into Rethink
         run: |
-          set -euxo pipefail
-          mkdir -p rethink/testdpc/src/main
-          cp -a testdpc/src/main/java rethink/testdpc/src/main/
-          cp -a testdpc/src/main/res rethink/testdpc/src/main/
-          cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
-          cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
-          cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
-          plugins { id("com.android.library") }
-          android {
-              namespace = "com.afwsamples.testdpc"
-              compileSdk = 35
-              defaultConfig { minSdk = 23 }
-          }
-          dependencies {
-              implementation("androidx.appcompat:appcompat:1.7.0")
-              implementation("androidx.annotation:annotation:1.9.1")
-              implementation("androidx.core:core:1.15.0")
-              implementation("androidx.enterprise:enterprise-feedback:1.1.0")
-              implementation("androidx.legacy:legacy-support-v13:1.0.0")
-              implementation("androidx.lifecycle:lifecycle-common:2.8.7")
-              implementation("androidx.lifecycle:lifecycle-process:2.8.7")
-              implementation("androidx.lifecycle:lifecycle-runtime:2.8.7")
-              implementation("androidx.localbroadcastmanager:localbroadcastmanager:1.1.0")
-              implementation("androidx.recyclerview:recyclerview:1.3.2")
-              implementation("androidx.preference:preference:1.2.1")
-              implementation("androidx.collection:collection:1.4.5")
-              implementation("com.google.guava:guava:33.3.1-android")
-              implementation("org.bouncycastle:bcpkix-jdk15on:1.70")
-              implementation("org.bouncycastle:bcprov-jdk15on:1.70")
-              implementation("dev.rikka.shizuku:api:13.1.5")
-              implementation("dev.rikka.shizuku:provider:13.1.5")
-              implementation("com.google.zxing:core:3.5.3")
-              implementation("com.google.android.setupdesign:setupdesign:3.1.2")
-              implementation("com.google.android.setupcompat:setupcompat:3.0.3")
-          }
-          GRADLE
-          python3 - <<'PY'
-          from pathlib import Path
-          p=Path("rethink/settings.gradle.kts")
-          s=p.read_text()
-          if 'include(":testdpc")' not in s:
-              s += '\ninclude(":testdpc")\n'
-          p.write_text(s)
-          p=Path("rethink/app/build.gradle.kts")
-          s=p.read_text()
-          marker='dependencies {'
-          if marker not in s:
-              raise SystemExit("Cannot locate app dependencies block")
-          s=s.replace(marker, marker+'\n    implementation(project(":testdpc"))', 1)
-          p.write_text(s)
-          # Expose the Rethink UI from the TestDPC policy screen's options menu.
-          p=Path("rethink/testdpc/src/main/java/com/afwsamples/testdpc/PolicyManagementActivity.java")
-          s=p.read_text()
-          old='''  public boolean onCreateOptionsMenu(Menu menu) {
-              getMenuInflater().inflate(R.menu.policy_management_menu, menu);
-              return true;
-          }'''
-          new='''  public boolean onCreateOptionsMenu(Menu menu) {
-              getMenuInflater().inflate(R.menu.policy_management_menu, menu);
-              menu.add(0, 90001, 100, "Open Rethink").setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
-              return true;
-          }'''
-          if old not in s:
-              raise SystemExit("TestDPC menu anchor did not match; refusing a blind source edit")
-          s=s.replace(old,new,1)
-          old='''    int itemId = item.getItemId();
-    if (itemId == R.id.action_show_search) {'''
-          new='''    int itemId = item.getItemId();
-    if (itemId == 90001) {
-      Intent rethink = new Intent();
-      rethink.setClassName(this, "com.celzero.bravedns.ui.HomeScreenActivity");
-      try { startActivity(rethink); }
-      catch (android.content.ActivityNotFoundException e) {
-        new AlertDialog.Builder(this).setMessage("Rethink screen is not available in this build.")
-            .setPositiveButton("OK", null).show();
-      }
-      return true;
-    } else if (itemId == R.id.action_show_search) {'''
-          if old not in s:
-              raise SystemExit("TestDPC menu handler anchor did not match; refusing a blind source edit")
-          s=s.replace(old,new,1)
-          p.write_text(s)
-          PY
-      - name: Build combined de-Googled debug APK
+          chmod +x target/scripts/integrate-testdpc-rethink.sh
+          target/scripts/integrate-testdpc-rethink.sh
+      - name: Build merged APK
         working-directory: rethink
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
-      - name: Publish combined APK as a prerelease asset
+      - name: Publish APK
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
-          set -euxo pipefail
-          APK="$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
+          set -euo pipefail
+          APK="$(find rethink/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
           test -n "$APK"
           TAG="combined-debug-${RUN_NUMBER}"
-          gh release create "$TAG" "$APK#TestDPC-Rethink-combined-debug.apk" --repo "$GITHUB_REPOSITORY" --title "Combined TestDPC + Rethink debug build ${RUN_NUMBER}" --notes "Automated integration build from branch integration/testdpc-rethink. Debug APK; verify on-device before production use." --prerelease
+          gh release create "$TAG" "$APK#TestDPC-Rethink-combined-debug.apk" --repo "$GITHUB_REPOSITORY" --title "Combined TestDPC + Rethink debug build ${RUN_NUMBER}" --notes "Automated debug build from integration/testdpc-rethink; validate on-device before production use." --prerelease
