@@ -17,7 +17,7 @@ mkdir -p rethink/setupcompat/src/main/java rethink/setupcompat/src/main/res reth
 [ ! -d rethink/setupcompat/main/aidl ] || cp -a rethink/setupcompat/main/aidl/. rethink/setupcompat/src/main/aidl/
 [ ! -d rethink/setupcompat/partnerconfig/java ] || cp -a rethink/setupcompat/partnerconfig/java/. rethink/setupcompat/src/main/java/
 [ ! -f rethink/setupcompat/AndroidManifest.xml ] || cp rethink/setupcompat/AndroidManifest.xml rethink/setupcompat/src/main/AndroidManifest.xml
-mkdir -p rethink/setupdesign/src/main/java rethink/setupdesign/src/main/res
+mkdir -p rethink/setupdesign/src/main/java rethink/setupdesign/src/main/res rethink/setupdesign-strings/src/main/res
 [ ! -d rethink/setupdesign/main/src ] || cp -a rethink/setupdesign/main/src/. rethink/setupdesign/src/main/java/
 [ ! -d rethink/setupdesign/main/res ] || cp -a rethink/setupdesign/main/res/. rethink/setupdesign/src/main/res/
 [ ! -d rethink/setupdesign/strings/res ] || cp -a rethink/setupdesign/strings/res/. rethink/setupdesign-strings/src/main/res/
