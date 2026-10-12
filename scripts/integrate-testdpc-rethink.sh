@@ -63,3 +63,5 @@ b='''    int itemId = item.getItemId();
 if a not in s: raise SystemExit("menu handler anchor mismatch")
 p.write_text(s.replace(a,b,1))
 PY
+
+# Integration is performed only in the CI workspace; upstream repositories remain unchanged.
