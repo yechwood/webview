@@ -15,6 +15,7 @@ jobs:
     steps:
       - name: Verify runner prerequisites
         run: |
+          set -euxo pipefail
           command -v git
           command -v unzip
           java -version
@@ -27,29 +28,50 @@ jobs:
           REPO: ${{ github.repository }}
           REF: ${{ github.ref_name }}
         run: |
+          set -euxo pipefail
           git -c http.extraheader="AUTHORIZATION: basic $(printf 'x-access-token:%s' "$TOKEN" | base64 -w0)" clone --depth 1 --branch "$REF" "https://github.com/$REPO.git" target
           git clone --depth 1 https://github.com/yechwood/rethink-app.git rethink
           git clone --depth 1 https://github.com/yechwood/android-testdpc.git testdpc
       - name: Integrate TestDPC into Rethink
         run: |
+          set -euxo pipefail
           chmod +x target/scripts/integrate-testdpc-rethink.sh
           target/scripts/integrate-testdpc-rethink.sh
       - name: Diagnose runner resources
         run: |
+          set -euxo pipefail
           free -h
           df -h .
           java -version
       - name: Build merged APK
         working-directory: rethink
         env:
-          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g -Dorg.gradle.internal.http.connectionTimeout=30000 -Dorg.gradle.internal.http.socketTimeout=60000
         run: |
+          set -uo pipefail
           chmod +x ./gradlew
           echo "Gradle build started at $(date -u +%FT%TZ)"
-          timeout --signal=TERM --kill-after=60s 30m ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
-          echo "Gradle build finished at $(date -u +%FT%TZ)"
-          find app/build/outputs/apk -maxdepth 4 -type f -name '*.apk' -print
+          echo "Gradle wrapper:"
+          cat gradle/wrapper/gradle-wrapper.properties
+          echo "Gradle version:"
+          timeout --signal=TERM --kill-after=30s 25m ./gradlew --no-daemon --console=plain --info --stacktrace --max-workers=2 :app:assembleFdroidFullDebug -PfirestackRepo=jitpack 2>&1 | tee gradle-build.log
+          build_status=${PIPESTATUS[0]}
+          echo "Gradle exit code: $build_status"
+          echo "Gradle build ended at $(date -u +%FT%TZ)"
+          find app/build/outputs/apk -maxdepth 4 -type f -name '*.apk' -print || true
+          exit "$build_status"
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: combined-build-diagnostics-${{ github.run_number }}
+          path: |
+            rethink/gradle-build.log
+            rethink/app/build/reports/**
+          if-no-files-found: warn
+          retention-days: 14
       - name: Upload APK artifact
+        if: success()
         uses: actions/upload-artifact@v4
         with:
           name: provider-fixed-testdpc-rethink-apk
@@ -57,6 +79,7 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - name: Publish single APK
+        if: success()
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_NUMBER: ${{ github.run_number }}
