@@ -30,14 +30,16 @@ dependencies {
  implementation("dev.rikka.shizuku:api:13.1.5")
  implementation("dev.rikka.shizuku:provider:13.1.5")
  implementation("com.google.zxing:core:3.5.3")
- implementation("com.google.android.setupdesign:setupdesign:3.1.2")
- implementation("com.google.android.setupcompat:setupcompat:3.0.3")
+ implementation(project(":setupdesign"))
+ implementation(project(":setupcompat"))
 }
 GRADLE
 python3 - <<'PY'
 from pathlib import Path
 p=Path("rethink/settings.gradle.kts"); s=p.read_text()
-if 'include(":testdpc")' not in s: p.write_text(s+'\ninclude(":testdpc")\n')
+for module in (":testdpc", ":setupdesign", ":setupcompat"):
+    if f'include("{module}")' not in s: s += f'\ninclude("{module}")\n'
+p.write_text(s)
 p=Path("rethink/app/build.gradle.kts"); s=p.read_text()
 if 'implementation(project(":testdpc"))' not in s:
  if 'dependencies {' not in s: raise SystemExit("app dependencies block not found")
@@ -76,6 +78,9 @@ android {
     compileSdk = 35
     defaultConfig { minSdk = 23 }
     sourceSets["main"].manifest.srcFile("AndroidManifest.xml")
+    sourceSets["main"].java.srcDirs("main/java", "partnerconfig/java")
+    sourceSets["main"].aidl.srcDirs("main/aidl")
+    sourceSets["main"].res.srcDirs("main/res")
 }
 dependencies {
     implementation("androidx.annotation:annotation:1.9.1")
@@ -89,7 +94,7 @@ android {
     compileSdk = 35
     defaultConfig { minSdk = 23 }
     sourceSets["main"].manifest.srcFile("main/AndroidManifest.xml")
-    sourceSets["main"].java.srcDirs("main/src", "strings/src")
+    sourceSets["main"].java.srcDirs("main/src")
     sourceSets["main"].res.srcDirs("main/res", "strings/res")
 }
 dependencies {
