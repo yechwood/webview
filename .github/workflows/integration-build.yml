@@ -4,7 +4,7 @@ on:
     branches: [integration/testdpc-rethink]
   workflow_dispatch:
 concurrency:
-  group: combined-testdpc-rethink-${{ github.ref }}
+  group: combined-testdpc-rethink-v2-${{ github.ref }}
   cancel-in-progress: true
 permissions:
   contents: write
@@ -31,8 +31,15 @@ jobs:
         run: |
           chmod +x target/scripts/integrate-testdpc-rethink.sh
           target/scripts/integrate-testdpc-rethink.sh
+      - name: Diagnose runner resources
+        run: |
+          free -h
+          df -h .
+          java -version
       - name: Build merged APK
         working-directory: rethink
+        env:
+          GRADLE_OPTS: -Xmx4g -XX:MaxMetaspaceSize=1g
         run: |
           chmod +x ./gradlew
           echo "Gradle build started at $(date -u +%FT%TZ)"
