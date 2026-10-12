@@ -11,7 +11,7 @@ permissions:
 jobs:
   combined-apk:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 40
     steps:
       - name: Install prerequisites
         run: |
@@ -36,9 +36,16 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "Gradle build started at $(date -u +%FT%TZ)"
-          timeout --signal=TERM --kill-after=60s 35m ./gradlew --no-daemon --console=plain --stacktrace --info :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
+          timeout --signal=TERM --kill-after=60s 30m ./gradlew --no-daemon --console=plain --stacktrace --max-workers=2 :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
           echo "Gradle build finished at $(date -u +%FT%TZ)"
           find app/build/outputs/apk -maxdepth 4 -type f -name '*.apk' -print
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: provider-fixed-testdpc-rethink-apk
+          path: rethink/app/build/outputs/apk/fdroidFull/debug/app-fdroid-full-armeabi-v7a-debug.apk
+          if-no-files-found: error
+          retention-days: 14
       - name: Publish single APK
         env:
           GH_TOKEN: ${{ github.token }}
