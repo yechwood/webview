@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   combined-apk:
@@ -120,10 +120,13 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew --no-daemon --stacktrace :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
-      - name: Upload combined APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: testdpc-rethink-combined-debug
-          path: rethink/app/build/outputs/apk/fdroid/full/debug/*.apk
-          if-no-files-found: error
-          retention-days: 14
+      - name: Publish combined APK as a prerelease asset
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euxo pipefail
+          APK="$(find app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
+          test -n "$APK"
+          TAG="combined-debug-${RUN_NUMBER}"
+          gh release create "$TAG" "$APK#TestDPC-Rethink-combined-debug.apk" --repo "$GITHUB_REPOSITORY" --title "Combined TestDPC + Rethink debug build ${RUN_NUMBER}" --notes "Automated integration build from branch integration/testdpc-rethink. Debug APK; verify on-device before production use." --prerelease
