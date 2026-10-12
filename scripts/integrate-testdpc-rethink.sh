@@ -5,6 +5,9 @@ cp -a testdpc/src/main/java rethink/testdpc/src/main/
 cp -a testdpc/src/main/res rethink/testdpc/src/main/
 cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
 cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
+mkdir -p rethink/setupdesign rethink/setupcompat
+curl -fL 'https://android.googlesource.com/platform/external/setupdesign/+archive/4634dac90e3c09a78c2fcdfcb16ab9cb16265527.tar.gz' | tar -xz -C rethink/setupdesign
+curl -fL 'https://android.googlesource.com/platform/external/setupcompat/+archive/2ce41c8f4de550b5186233cec0a722dd0ffd9a84.tar.gz' | tar -xz -C rethink/setupcompat
 cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
 android { namespace = "com.afwsamples.testdpc"; compileSdk = 35; defaultConfig { minSdk = 23 } }
@@ -65,3 +68,41 @@ p.write_text(s.replace(a,b,1))
 PY
 
 # Integration is performed only in the CI workspace; upstream repositories remain unchanged.
+
+cat > rethink/setupcompat/build.gradle.kts <<'GRADLE'
+plugins { id("com.android.library") }
+android {
+    namespace = "com.google.android.setupcompat"
+    compileSdk = 35
+    defaultConfig { minSdk = 23 }
+    sourceSets["main"].manifest.srcFile("AndroidManifest.xml")
+}
+dependencies {
+    implementation("androidx.annotation:annotation:1.9.1")
+    implementation("androidx.window:window:1.3.0")
+}
+GRADLE
+cat > rethink/setupdesign/build.gradle.kts <<'GRADLE'
+plugins { id("com.android.library") }
+android {
+    namespace = "com.google.android.setupdesign"
+    compileSdk = 35
+    defaultConfig { minSdk = 23 }
+    sourceSets["main"].manifest.srcFile("main/AndroidManifest.xml")
+    sourceSets["main"].java.srcDirs("main/src", "strings/src")
+    sourceSets["main"].res.srcDirs("main/res", "strings/res")
+}
+dependencies {
+    implementation(project(":setupcompat"))
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.annotation:annotation:1.9.1")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.window:window:1.3.0")
+    implementation("androidx.core:core:1.15.0")
+    implementation("androidx.customview:customview:1.2.0")
+    implementation("androidx.fragment:fragment:1.8.5")
+    implementation("androidx.vectordrawable:vectordrawable:1.2.0")
+    implementation("com.google.errorprone:error_prone_annotations:2.36.0")
+}
+GRADLE
