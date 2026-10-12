@@ -16,12 +16,12 @@ p = Path("rethink/testdpc/src/main/AndroidManifest.xml")
 s = p.read_text()
 # Remove only the LAUNCHER intent-filter inside PolicyManagementActivity;
 # keep its CHECK_POLICY_COMPLIANCE filter and all device-policy components.
-m = re.search(r'(<activity\\b[^>]*android:name="\\.PolicyManagementActivity"[^>]*>)(.*?)(</activity>)', s, re.S)
+m = re.search(r'(<activity\b[^>]*android:name="\.PolicyManagementActivity"[^>]*>)(.*?)(</activity>)', s, re.S)
 if not m:
     raise SystemExit("Could not locate TestDPC PolicyManagementActivity")
 body = m.group(2)
 body2, n = re.subn(
-    r'\\s*<intent-filter>\\s*<action android:name="android.intent.action.MAIN"\\s*/>\\s*<category android:name="android.intent.category.LAUNCHER"\\s*/>\\s*</intent-filter>',
+    r'\s*<intent-filter>\s*<action android:name="android.intent.action.MAIN"\s*/>\s*<category android:name="android.intent.category.LAUNCHER"\s*/>\s*</intent-filter>',
     '',
     body,
     count=1,
@@ -30,7 +30,7 @@ if n != 1:
     raise SystemExit("Could not remove exactly one TestDPC launcher filter")
 s = s[:m.start(2)] + body2 + s[m.end(2):]
 # Remove LAUNCHER from the setup alias but preserve its INFO category for provisioning.
-s = re.sub(r'<category android:name="android.intent.category.LAUNCHER"\\s*/>', '', s)
+s = re.sub(r'<category android:name="android.intent.category.LAUNCHER"\s*/>', '', s)
 p.write_text(s)
 print("Kept Rethink as the sole launcher entry point in the combined APK")
 PY_LAUNCHERS
