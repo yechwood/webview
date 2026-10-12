@@ -166,3 +166,20 @@ for rel in ("rethink/app/src/main/AndroidManifest.xml", "rethink/app/src/full/An
                   'android:resource="@xml/file_provider_paths" tools:replace="android:resource" />')
     p.write_text(s)
 PY
+
+
+# TestDPC references SetupDesign resource IDs through its own R class. The
+# upstream resource archive layout does not provide all legacy names required
+# by these source files, so provide compatible aliases in the TestDPC module.
+mkdir -p rethink/testdpc/src/main/res/values
+cat > rethink/testdpc/src/main/res/values/integration_compat.xml <<'XML'
+<resources>
+    <string name="sud_next_button_label">Next</string>
+    <style name="SudGlifButton.Primary" parent="Widget.MaterialComponents.Button" />
+    <style name="SudGlifButtonBar.Stackable" parent="Widget.MaterialComponents.Button" />
+    <style name="SudThemeGlifV3.Light" parent="Theme.MaterialComponents.Light.NoActionBar" />
+    <style name="SudThemeGlifV3.DayNight" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+    <style name="SudThemeGlifV4.Light" parent="Theme.MaterialComponents.Light.NoActionBar" />
+    <style name="SudThemeGlifV4.DayNight" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+</resources>
+XML
