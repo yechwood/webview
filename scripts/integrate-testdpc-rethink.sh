@@ -5,7 +5,7 @@ cp -a testdpc/src/main/java rethink/testdpc/src/main/
 cp -a testdpc/src/main/res rethink/testdpc/src/main/
 cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
 cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
-mkdir -p rethink/setupdesign rethink/setupcompat
+mkdir -p rethink/setupdesign rethink/setupcompat rethink/setupdesign-strings
 curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://android.googlesource.com/platform/external/setupdesign/+archive/4634dac90e3c09a78c2fcdfcb16ab9cb16265527.tar.gz' | tar -xz -C rethink/setupdesign
 curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://android.googlesource.com/platform/external/setupcompat/+archive/2ce41c8f4de550b5186233cec0a722dd0ffd9a84.tar.gz' | tar -xz -C rethink/setupcompat
 # These source archives contain upstream Groovy build files that shadow our Gradle module scripts.
@@ -20,7 +20,7 @@ mkdir -p rethink/setupcompat/src/main/java rethink/setupcompat/src/main/res reth
 mkdir -p rethink/setupdesign/src/main/java rethink/setupdesign/src/main/res
 [ ! -d rethink/setupdesign/main/src ] || cp -a rethink/setupdesign/main/src/. rethink/setupdesign/src/main/java/
 [ ! -d rethink/setupdesign/main/res ] || cp -a rethink/setupdesign/main/res/. rethink/setupdesign/src/main/res/
-[ ! -d rethink/setupdesign/strings/res ] || cp -a rethink/setupdesign/strings/res/. rethink/setupdesign/src/main/res/
+[ ! -d rethink/setupdesign/strings/res ] || cp -a rethink/setupdesign/strings/res/. rethink/setupdesign-strings/src/main/res/
 [ ! -f rethink/setupdesign/main/AndroidManifest.xml ] || cp rethink/setupdesign/main/AndroidManifest.xml rethink/setupdesign/src/main/AndroidManifest.xml
 cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
@@ -51,7 +51,7 @@ GRADLE
 python3 - <<'PY'
 from pathlib import Path
 p=Path("rethink/settings.gradle.kts"); s=p.read_text()
-for module in (":testdpc", ":setupdesign", ":setupcompat"):
+for module in (":testdpc", ":setupdesign", ":setupcompat", ":setupdesign-strings"):
     if f'include("{module}")' not in s: s += f'\ninclude("{module}")\n'
 p.write_text(s)
 p=Path("rethink/app/build.gradle.kts"); s=p.read_text()
@@ -99,6 +99,14 @@ dependencies {
     implementation("com.google.errorprone:error_prone_annotations:2.36.0")
 }
 GRADLE
+cat > rethink/setupdesign-strings/build.gradle.kts <<'GRADLE'
+plugins { id("com.android.library") }
+android {
+    namespace = "com.google.android.setupdesign.strings"
+    compileSdk = 35
+    defaultConfig { minSdk = 23 }
+}
+GRADLE
 cat > rethink/setupdesign/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
 android {
@@ -108,6 +116,7 @@ android {
 }
 dependencies {
     implementation(project(":setupcompat"))
+    implementation(project(":setupdesign-strings"))
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.appcompat:appcompat:1.7.0")
