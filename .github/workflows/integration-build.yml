@@ -3,6 +3,9 @@ on:
   push:
     branches: [integration/testdpc-rethink]
   workflow_dispatch:
+concurrency:
+  group: combined-testdpc-rethink-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: write
 jobs:
@@ -33,7 +36,7 @@ jobs:
         run: |
           chmod +x ./gradlew
           echo "Gradle build started at $(date -u +%FT%TZ)"
-          timeout --signal=TERM --kill-after=60s 40m ./gradlew --no-daemon --console=plain --stacktrace :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
+          timeout --signal=TERM --kill-after=60s 35m ./gradlew --no-daemon --console=plain --stacktrace --info :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
           echo "Gradle build finished at $(date -u +%FT%TZ)"
           find app/build/outputs/apk -maxdepth 4 -type f -name '*.apk' -print
       - name: Publish APK
