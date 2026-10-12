@@ -10,6 +10,18 @@ curl -fL 'https://android.googlesource.com/platform/external/setupdesign/+archiv
 curl -fL 'https://android.googlesource.com/platform/external/setupcompat/+archive/2ce41c8f4de550b5186233cec0a722dd0ffd9a84.tar.gz' | tar -xz -C rethink/setupcompat
 # These source archives contain upstream Groovy build files that shadow our Gradle module scripts.
 rm -f rethink/setupcompat/build.gradle rethink/setupdesign/build.gradle
+# Normalize source archives into standard Android library source layouts.
+mkdir -p rethink/setupcompat/src/main/java rethink/setupcompat/src/main/res rethink/setupcompat/src/main/aidl
+[ ! -d rethink/setupcompat/main/java ] || cp -a rethink/setupcompat/main/java/. rethink/setupcompat/src/main/java/
+[ ! -d rethink/setupcompat/main/res ] || cp -a rethink/setupcompat/main/res/. rethink/setupcompat/src/main/res/
+[ ! -d rethink/setupcompat/main/aidl ] || cp -a rethink/setupcompat/main/aidl/. rethink/setupcompat/src/main/aidl/
+[ ! -d rethink/setupcompat/partnerconfig/java ] || cp -a rethink/setupcompat/partnerconfig/java/. rethink/setupcompat/src/main/java/
+[ ! -f rethink/setupcompat/AndroidManifest.xml ] || cp rethink/setupcompat/AndroidManifest.xml rethink/setupcompat/src/main/AndroidManifest.xml
+mkdir -p rethink/setupdesign/src/main/java rethink/setupdesign/src/main/res
+[ ! -d rethink/setupdesign/main/src ] || cp -a rethink/setupdesign/main/src/. rethink/setupdesign/src/main/java/
+[ ! -d rethink/setupdesign/main/res ] || cp -a rethink/setupdesign/main/res/. rethink/setupdesign/src/main/res/
+[ ! -d rethink/setupdesign/strings/res ] || cp -a rethink/setupdesign/strings/res/. rethink/setupdesign/src/main/res/
+[ ! -f rethink/setupdesign/main/AndroidManifest.xml ] || cp rethink/setupdesign/main/AndroidManifest.xml rethink/setupdesign/src/main/AndroidManifest.xml
 cat > rethink/testdpc/build.gradle.kts <<'GRADLE'
 plugins { id("com.android.library") }
 android { namespace = "com.afwsamples.testdpc"; compileSdk = 35; defaultConfig { minSdk = 23 } }
@@ -79,10 +91,6 @@ android {
     namespace = "com.google.android.setupcompat"
     compileSdk = 35
     defaultConfig { minSdk = 23 }
-    sourceSets["main"].manifest.srcFile("AndroidManifest.xml")
-    sourceSets["main"].java.srcDirs("main/java", "partnerconfig/java")
-    sourceSets["main"].aidl.srcDirs("main/aidl")
-    sourceSets["main"].res.srcDirs("main/res")
 }
 dependencies {
     implementation("androidx.annotation:annotation:1.9.1")
@@ -95,9 +103,6 @@ android {
     namespace = "com.google.android.setupdesign"
     compileSdk = 35
     defaultConfig { minSdk = 23 }
-    sourceSets["main"].manifest.srcFile("main/AndroidManifest.xml")
-    sourceSets["main"].java.srcDirs("main/src")
-    sourceSets["main"].res.srcDirs("main/res", "strings/res")
 }
 dependencies {
     implementation(project(":setupcompat"))
