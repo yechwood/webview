@@ -5,6 +5,31 @@ cp -a testdpc/src/main/java rethink/testdpc/src/main/
 cp -a testdpc/src/main/res rethink/testdpc/src/main/
 cp -a testdpc/src/main/aidl rethink/testdpc/src/main/
 cp testdpc/src/main/AndroidManifest.xml rethink/testdpc/src/main/AndroidManifest.xml
+
+# Give TestDPC's hard-coded provider authorities a unique identity for the combined
+# app. Otherwise an independently installed TestDPC claims these same authorities
+# and Android rejects this APK with INSTALL_FAILED_CONFLICTING_PROVIDER.
+python3 - <<'PY_PROVIDERS'
+from pathlib import Path
+root = Path("rethink/testdpc/src/main")
+replacements = {
+    "com.afwsamples.testdpc.fileprovider": "com.yechwood.testdpc.rethink.testdpc.fileprovider",
+    "com.afwsamples.testdpc.usericoncontentprovider": "com.yechwood.testdpc.rethink.testdpc.usericoncontentprovider",
+}
+for p in root.rglob("*"):
+    if not p.is_file() or p.suffix.lower() not in {".xml", ".java", ".kt", ".aidl"}:
+        continue
+    try:
+        content = p.read_text()
+    except UnicodeDecodeError:
+        continue
+    updated = content
+    for old, new in replacements.items():
+        updated = updated.replace(old, new)
+    if updated != content:
+        p.write_text(updated)
+        print(f"Namespaced conflicting provider authority in {p}")
+PY_PROVIDERS
 mkdir -p rethink/setupdesign rethink/setupcompat rethink/setupdesign-strings
 curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://gitlab.com/aosp-mirror-1/platform/external/setupdesign/-/archive/main/setupdesign-main.tar.gz' | tar -xz --strip-components=1 -C rethink/setupdesign
 curl --retry 6 --retry-all-errors --retry-delay 3 -fL 'https://gitlab.com/aosp-mirror-1/platform/external/setupcompat/-/archive/main/setupcompat-main.tar.gz' | tar -xz --strip-components=1 -C rethink/setupcompat
@@ -161,7 +186,7 @@ for rel in ("rethink/app/src/main/AndroidManifest.xml", "rethink/app/src/full/An
                 s = s[:start] + newtag + s[end:]
     # Preserve both authority names on the shared FileProvider declaration; prefer Rethink's paths.
     s = s.replace('android:authorities="${applicationId}.provider;${applicationId}.backup.BackupAgent"',
-                  'android:authorities="${applicationId}.provider;${applicationId}.backup.BackupAgent;com.afwsamples.testdpc.fileprovider" tools:replace="android:authorities"')
+                  'android:authorities="${applicationId}.provider;${applicationId}.backup.BackupAgent;com.yechwood.testdpc.rethink.testdpc.fileprovider" tools:replace="android:authorities"')
     s = s.replace('android:resource="@xml/file_provider_paths" />',
                   'android:resource="@xml/file_provider_paths" tools:replace="android:resource" />')
     p.write_text(s)
