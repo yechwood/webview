@@ -39,13 +39,25 @@ jobs:
           timeout --signal=TERM --kill-after=60s 35m ./gradlew --no-daemon --console=plain --stacktrace --info :app:assembleFdroidFullDebug -PfirestackRepo=jitpack
           echo "Gradle build finished at $(date -u +%FT%TZ)"
           find app/build/outputs/apk -maxdepth 4 -type f -name '*.apk' -print
-      - name: Publish APK
+      - name: Publish APKs
         env:
           GH_TOKEN: ${{ github.token }}
           RUN_NUMBER: ${{ github.run_number }}
         run: |
           set -euo pipefail
-          APK="$(find rethink/app/build/outputs/apk -type f -name '*.apk' | head -n 1)"
-          test -n "$APK"
+          APK_DIR="rethink/app/build/outputs/apk/fdroidFull/debug"
+          ARM32="$APK_DIR/app-fdroid-full-armeabi-v7a-debug.apk"
+          ARM64="$APK_DIR/app-fdroid-full-arm64-v8a-debug.apk"
+          UNIVERSAL="$APK_DIR/app-fdroid-full-universal-debug.apk"
+          test -s "$ARM32"
+          test -s "$ARM64"
+          test -s "$UNIVERSAL"
           TAG="combined-debug-${RUN_NUMBER}"
-          gh release create "$TAG" "$APK#TestDPC-Rethink-combined-debug.apk" --repo "$GITHUB_REPOSITORY" --title "Combined TestDPC + Rethink debug build ${RUN_NUMBER}" --notes "Automated debug build from integration/testdpc-rethink; validate on-device before production use." --prerelease
+          gh release create "$TAG" \
+            "$ARM32#TestDPC-Rethink-arm32.apk" \
+            "$ARM64#TestDPC-Rethink-arm64.apk" \
+            "$UNIVERSAL#TestDPC-Rethink-universal.apk" \
+            --repo "$GITHUB_REPOSITORY" \
+            --title "Combined TestDPC + Rethink debug build ${RUN_NUMBER}" \
+            --notes "Automated debug build from integration/testdpc-rethink; includes ARM32, ARM64, and universal APKs. Validate on-device before production use." \
+            --prerelease
