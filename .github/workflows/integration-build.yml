@@ -13,10 +13,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
-      - name: Install prerequisites
+      - name: Verify runner prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y git unzip openjdk-17-jdk
+          command -v git
+          command -v unzip
+          java -version
           echo "JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64" >> "$GITHUB_ENV"
       - name: Clone source repositories
         env:
