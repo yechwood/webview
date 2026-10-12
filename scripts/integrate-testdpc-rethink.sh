@@ -96,6 +96,7 @@ android {
 dependencies {
     implementation("androidx.annotation:annotation:1.9.1")
     implementation("androidx.window:window:1.3.0")
+    implementation("com.google.errorprone:error_prone_annotations:2.36.0")
 }
 GRADLE
 cat > rethink/setupdesign/build.gradle.kts <<'GRADLE'
