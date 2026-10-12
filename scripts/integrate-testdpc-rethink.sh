@@ -129,3 +129,40 @@ dependencies {
     implementation("com.google.errorprone:error_prone_annotations:2.36.0")
 }
 GRADLE
+
+# Resolve intentional manifest overlaps between the two apps before building.
+python3 - <<'PY'
+from pathlib import Path
+for rel in ("rethink/app/src/main/AndroidManifest.xml", "rethink/app/src/full/AndroidManifest.xml"):
+    p = Path(rel)
+    if not p.exists():
+        continue
+    s = p.read_text()
+    if 'xmlns:tools=' not in s.split('>', 1)[0]:
+        s = s.replace('<manifest xmlns:android="http://schemas.android.com/apk/res/android"',
+                      '<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools"', 1)
+    # Keep Rethink's app-level identity/security settings as the merged app's values.
+    if '<application' in s:
+        start = s.index('<application')
+        end = s.index('>', start)
+        tag = s[start:end]
+        replacements = []
+        for attr in ('android:allowBackup', 'android:icon', 'android:theme'):
+            if attr in tag:
+                replacements.append(attr)
+        if replacements and 'tools:replace=' not in tag:
+            s = s[:end] + ' tools:replace="' + ','.join(replacements) + '"' + s[end:]
+        elif replacements:
+            import re
+            m = re.search(r'tools:replace="([^"]*)"', tag)
+            if m:
+                merged = list(dict.fromkeys(m.group(1).split(',') + replacements))
+                newtag = tag[:m.start(1)] + ','.join(merged) + tag[m.end(1):]
+                s = s[:start] + newtag + s[end:]
+    # Preserve both authority names on the shared FileProvider declaration; prefer Rethink's paths.
+    s = s.replace('android:authorities="${applicationId}.provider;${applicationId}.backup.BackupAgent"',
+                  'android:authorities="${applicationId}.provider;${applicationId}.backup.BackupAgent;com.afwsamples.testdpc.fileprovider" tools:replace="android:authorities"')
+    s = s.replace('android:resource="@xml/file_provider_paths" />',
+                  'android:resource="@xml/file_provider_paths" tools:replace="android:resource" />')
+    p.write_text(s)
+PY
